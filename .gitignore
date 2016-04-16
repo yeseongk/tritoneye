@@ -2,3 +2,7 @@
 
 # General externsions
 *.pyc
+*.swp
+
+# Temp
+tmp/
