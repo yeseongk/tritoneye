@@ -53,7 +53,7 @@ class TEObjectTracker:
 		contours = filter(lambda cnt:
 				cnt is not None and
 				len(cnt) > 0 and
-				cv2.contourArea(cnt) < conf.MIN_OBJECT_AREA, contours)
+				cv2.contourArea(cnt) > conf.MIN_OBJECT_AREA, contours)
 		
 		# TODO
 		# collect all previous countours with labeled index 
