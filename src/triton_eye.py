@@ -89,7 +89,7 @@ if __name__ == '__main__':
 		# record video
 		if video_writer.isopened():
 			if record_track:
-				video_writer.record(frame)
+				video_writer.record(merged_frame)
 			else:
 				video_writer.record(original_frame)
 
