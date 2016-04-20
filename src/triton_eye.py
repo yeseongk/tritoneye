@@ -24,6 +24,9 @@ def merge_2x2frames(frame_list): # If # of frames > 4, ignored
 
 	return merged
 
+def draw_path(frame, path):
+	for i in xrange(1, len(path)):
+		cv2.line(frame, path[i - 1], path[i], (0, 0, 255), 1)
 
 if __name__ == '__main__':
 	# construct the argument parse and parse the arguments
@@ -67,6 +70,7 @@ if __name__ == '__main__':
 
 		# Make a copy of the original frame
 		original_frame = frame.copy()
+		frame_result = frame.copy()
 
 		# Find objects & show into the frame
 		contours, frame_mask, frame_post = object_tracker.feed_frame(frame)
@@ -82,8 +86,17 @@ if __name__ == '__main__':
 			cv2.drawContours(frame_post, [box_draw], 0, (0, 0, 255), 2)
 			cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
 
+		# Draw the result frame with paths
+		tracked_objects = object_tracker.get_tracked_objects()
+		for sobj in tracked_objects:
+			draw_path(frame_result, sobj.position_list)
+			cv2.drawContours(frame_result, [sobj.prev_contour], -1, (0, 255, 0), 2)
+			pos = sobj.position_list[-1]
+			cv2.putText(frame_result, sobj.ID, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+
 		# After PROCESSING: show the frame to our screen
-		merged_frame = merge_2x2frames([frame, frame_mask, frame_post])
+		merged_frame = merge_2x2frames([frame, frame_mask, frame_post, frame_result])
 		cv2.imshow("Triton Eye", merged_frame)
 
 		# record video
