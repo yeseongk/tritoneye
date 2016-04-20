@@ -31,7 +31,14 @@ def calc_center_of_mass(cnt):
 
 
 def calc_dist(pos1, pos2):
-	return math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
+	return math.hypot(pos1[0] - pos2[0], pos1[1] - pos2[1])
+	#return math.sqrt((pos1[0] - pos2[0])**2 + (pos1[1] - pos2[1])**2)
+
+def calc_dist_line_point(line_start, line_end, point):
+	normal_length = math.hypot(line_end[0] - line_start[0], line_end[1] - line_start[1]) 
+	rel_distance = (point[0] - line_start[0]) * (line_end[1] - line_start[1]) - \
+		(point[1] - line_start[1]) * (line_end[0] - line_start[0])
+	return rel_distance / normal_length
 
 # --------------------------------------------------
 # Class definition
@@ -211,3 +218,60 @@ class TEObjectTracker:
 	def flush_objects(self):
 		self.tracked_objects = []
 		self.total_seen_objects = 0
+
+# Object counting class 1. line-based
+class TELineBasedCounter:
+	def __init__(self):
+		self.reference_line = None
+		self.object_counter = dict() # store if an object was online at least once
+
+	# Is line set?
+	def is_line_set(self):
+		return self.reference_line is not None
+
+	# Set reference line
+	def set_reference_line(self, line):
+		self.reference_line = line
+		if line is None:
+			self.flush_objects()
+
+	# Profess tracked objects for each frame
+	def feed_objects(self, tracked_objects, remove_untracked_object = True):
+		if self.reference_line is None:
+			return []
+
+		(line_start, line_end) = self.reference_line
+
+		# NOTE: it works correctly only if
+		# the tracked objects is given when "only_now_seen_objects" is true 
+		if remove_untracked_object: 
+			trackable_object_counter = dict()
+			for sobj in tracked_objects:
+				if sobj.ID in self.object_counter.keys():
+					trackable_object_counter[sobj.ID] = self.object_counter[sobj.ID]
+
+			self.object_counter = trackable_object_counter
+
+		# Check line-crossing for each object
+		crossing_objects = []
+		for sobj in tracked_objects:
+			last_pos = sobj.position_list[-1]
+			dist = calc_dist_line_point(line_start, line_end, last_pos)
+			abs_dist = abs(dist)
+
+			# If don't have, create as a tracked object
+			if sobj.ID not in self.object_counter.keys():
+				self.object_counter[sobj.ID] = False
+
+			# Check line crossing
+			if abs_dist < conf.MIN_DISTANCE_ON_LINE:
+				self.object_counter[sobj.ID] = True
+			elif abs_dist > conf.MIN_DISTANCE_CLOSE_TO_LINE and self.object_counter[sobj.ID] == True:
+				self.object_counter[sobj.ID] = False # Not to be tracked again
+				crossing_objects.append((sobj.ID, dist>0))
+
+		return crossing_objects
+
+	# Delete all tracked objects to newly start
+	def flush_objects(self):
+		self.object_counter = dict()

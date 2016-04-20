@@ -5,7 +5,9 @@ from videohandler.videoutil import *
 from recognition.object_tracking import *
 import recognition.recognition_conf as recg_conf
 
+# Merge frames into a single frame to display
 def merge_2x2frames(frame_list): # If # of frames > 4, ignored
+	global h, w
 	(h, w) = frame_list[0].shape[:2]
 	zeros = np.zeros((h, w, 3), dtype="uint8")
 
@@ -24,9 +26,33 @@ def merge_2x2frames(frame_list): # If # of frames > 4, ignored
 
 	return merged
 
+# Convert points to the frame wise
+def convert_points_on_2x2_frame(x, y):
+	global h, w # Set in merge_2x2frames
+
+	if x > w:
+		x -= w
+	if y > h:
+		y -= h
+
+	return (x, y)
+
+# Draw path with lines
 def draw_path(frame, path):
 	for i in xrange(1, len(path)):
 		cv2.line(frame, path[i - 1], path[i], (0, 0, 255), 1)
+
+# Mouse handler for the window
+def mouse_handler(event, x, y, flags, param):
+	global line_start, line_end, line_based_counter
+
+	if event == cv2.EVENT_LBUTTONDOWN:
+		line_end = None
+		line_based_counter.set_reference_line(None)
+		line_start = convert_points_on_2x2_frame(x, y)
+
+	if event == cv2.EVENT_LBUTTONUP:
+		line_end = convert_points_on_2x2_frame(x, y)
 
 if __name__ == '__main__':
 	# construct the argument parse and parse the arguments
@@ -37,12 +63,12 @@ if __name__ == '__main__':
 		help="path to the video file to write (optional)")
 	ap.add_argument("-t", "--record_track", action='store_true',
 		help="record video with the tracking result (valid only if -r is given, optional)", required=False)
-	ap.add_argument("-f", "--print_framenumber", action='store_true',
+	ap.add_argument("-f", "--print_verbose", action='store_true',
 		help="print the frame number, optional)", required=False)
 
 	args = vars(ap.parse_args())
 	record_track = args.get("record_track", False)
-	print_fn = args.get("print_framenumber", False)
+	print_verbose = args.get("print_verbose", False)
 
 	# Setup VideoStream (camera or video file) & Writer
 	video_handler = TEVideoHandler()
@@ -55,8 +81,18 @@ if __name__ == '__main__':
 	if (args.get("record_video", False)): # to record a video
 		video_writer.open(args["record_video"])
 
+	# Setup user interface
+	line_start = None
+	line_end = None
+	WINDOW_NAME = "Triton Eye"
+	cv2.namedWindow(WINDOW_NAME)
+	cv2.setMouseCallback(WINDOW_NAME, mouse_handler)
+
 	# Setup image processing classes
 	object_tracker = TEObjectTracker()
+	line_based_counter = TELineBasedCounter()
+	count_in = 0
+	count_out = 0
 
 	# Frame stream processing
 	num_frames = 0
@@ -92,12 +128,32 @@ if __name__ == '__main__':
 			draw_path(frame_result, sobj.position_list)
 			cv2.drawContours(frame_result, [sobj.prev_contour], -1, (0, 255, 0), 2)
 			pos = sobj.position_list[-1]
-			cv2.putText(frame_result, sobj.ID, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+			cv2.putText(frame_result, sobj.ID, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
 
+		# Update line counter
+		if line_start is not None and line_end is not None and not line_based_counter.is_line_set():
+			line_based_counter.set_reference_line((line_start, line_end))
+		crossing_objects = line_based_counter.feed_objects(tracked_objects)
+		if len(crossing_objects) > 0:
+			if print_verbose:
+				print(crossing_objects)
+
+			for co in crossing_objects:
+				if co[1] == True:
+					count_in += 1
+				else:
+					count_out += 1
+
+		# Draw user-defined line
+		if line_start is not None and line_end is not None:
+			cv2.line(frame_result, line_start, line_end, (0, 255, 255), 2)
 
 		# After PROCESSING: show the frame to our screen
 		merged_frame = merge_2x2frames([frame, frame_mask, frame_post, frame_result])
-		cv2.imshow("Triton Eye", merged_frame)
+		if count_in > 0 or count_out > 0:
+			cv2.putText(merged_frame, "IN: " + str(count_in) + " OUT: " + str(count_out),
+				(20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+		cv2.imshow(WINDOW_NAME, merged_frame)
 
 		# record video
 		if video_writer.isopened():
@@ -111,7 +167,7 @@ if __name__ == '__main__':
 		if key == ord("q"):
 			break
 
-		if print_fn:
+		if print_verbose:
 			print(num_frames)
 		num_frames += 1
 
