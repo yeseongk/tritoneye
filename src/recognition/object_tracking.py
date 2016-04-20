@@ -41,6 +41,7 @@ class SingleObjectInfo:
 		self.ID = ID
 		self.prev_contour = None
 		self.prev_min_rect = None
+		self.prev_cnt_area = None
 		self.position_list = deque(maxlen=conf.NUM_FRAMES_TO_TRACK_PATH)
 		self.last_actual_update = 0 # How many frames are expired after actual detection
 		self.num_actual_updates = 0
@@ -49,6 +50,7 @@ class SingleObjectInfo:
 		# store contour and update position (based on center of mass)
 		self.prev_contour = cnt
 		self.prev_min_rect = cv2.minAreaRect(cnt)
+		self.prev_cnt_area = cv2.contourArea(cnt)
 		self.position_list.append(calc_center_of_mass(cnt))
 
 		if is_actual:
@@ -125,11 +127,15 @@ class TEObjectTracker:
 		intersection = np.logical_and(img1, img2)
 		return np.count_nonzero(intersection) > 0
 
-	# return if the two countours intersect each other
+	# return if the two countours intersect each other using rotated rect
+	# (slight inaccurate but much faster)
 	def check_intersection_from_rect(self, rect1, rect2):
 		ret, _ = cv2.rotatedRectangleIntersection(rect1, rect2)
-		print(ret)
 		return ret != cv2.INTERSECT_NONE
+
+	# return if the two countour sizes are similar
+	def check_area_size_similarity(self, area1, area2):
+		return abs(1 - (area1 / area2)) < conf.MAX_RATIO_OF_AREA_CHANGE
 
 	# Sub function to track by identifying same objects (mainly private use)
 	def track_objects_from_contours(self, contours):
@@ -142,12 +148,14 @@ class TEObjectTracker:
 		for new_cnt in contours:
 			pos = calc_center_of_mass(new_cnt)
 			rect = cv2.minAreaRect(new_cnt)
+			area = cv2.contourArea(new_cnt)
 
 			# Get the list of objects intersected with distance
 			inter_objects = []
 			for sobj in self.tracked_objects:
 				#if self.check_intersection_from_contours(new_cnt, sobj.prev_contour):
-				if self.check_intersection_from_rect(rect, sobj.prev_min_rect):
+				if self.check_intersection_from_rect(rect, sobj.prev_min_rect) and \
+					self.check_area_size_similarity(area, sobj.prev_cnt_area):
 					dist = calc_dist(pos, sobj.position_list[-1])
 					inter_objects.append((sobj, dist))
 
