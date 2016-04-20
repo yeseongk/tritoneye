@@ -17,6 +17,8 @@ NEGLECT_SHADOW = False
 FILTER_NOISE_SIZE = (2,2)
 GAP_FILLING_METHOD = GapFillingMethod.MEDIAN
 MIN_OBJECT_AREA = 100 # Note: It is strongly related to the frame size.
+MAX_OBJECT_AREA = 40000 # Note: It is strongly related to the frame size.
+SUDDEN_CHANGE_AREA = 15000 # See verify_sudden_change function
 
 # Tracking algorithm related
 NUM_FRAMES_TO_TRACK_PATH = 30

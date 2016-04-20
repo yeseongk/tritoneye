@@ -69,18 +69,21 @@ class TEObjectTracker:
 		# Post processing configuration
 		self.noise_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, conf.FILTER_NOISE_SIZE)
 
-		# TODO: Object tracking data structure (list of SingleObjectInfo)
+		# Object tracking data structure (list of SingleObjectInfo)
 		self.total_seen_objects = 0
 		self.tracked_objects = []
 
-		# blank image (to be used for contours)
-		self.blank = None
+		# frame related variables
+		self.blank = None # blank image (to be used for contours)
+		self.frame_size = None
 		
 	# Main member function for updating with a new frame
 	def feed_frame(self, frame):
 		# 0. Initialize data structures (only once)
 		if self.blank is None:
 			self.blank = np.zeros(frame.shape[0:2])
+		if self.frame_size is None:
+			self.frame_size = frame.shape[0:2]
 
 		# 1. Background subtraction
 		fgmask = self.bs.apply(frame)
@@ -102,22 +105,31 @@ class TEObjectTracker:
 		contours = filter(lambda cnt:
 				cnt is not None and
 				len(cnt) > 0 and
-				cv2.contourArea(cnt) > conf.MIN_OBJECT_AREA, contours)
+				cv2.contourArea(cnt) > conf.MIN_OBJECT_AREA and
+				cv2.contourArea(cnt) < conf.MAX_OBJECT_AREA, contours)
 
-		# 4. Track objects
+		# 4. Sudden change verification
+		if self.verify_sudden_change(contours):
+			return contours, fgmask, fgmask_post
+
+		# 5. Track objects
 		self.track_objects_from_contours(contours)
 
 		return contours, fgmask, fgmask_post
 
-	def get_tracked_objects(self, only_now_seen_objects = False):
-		confirmed_objects = filter(
-				lambda sobj: sobj.num_actual_updates > conf.NUM_FRAMES_TO_CONFIRM_OBJECTS,
-				self.tracked_objects)
+	# Sudden change detection
+	# * If sudden change appears in screen,
+	# any BS algorithm couldn't detect object contours correctly.
+	# In this case, reset the background subtractor so that we could proceed the processing
+	def verify_sudden_change(self, contours):
+		area_sum = sum(map(lambda cnt: cv2.contourArea(cnt), contours))
 
-		if only_now_seen_objects:
-			return filter(lambda sobj: sobj.last_actual_update == 0, confirmed_objects)
+		if area_sum > conf.SUDDEN_CHANGE_AREA:
+			print("Sudden change detected")
+			self.bs = bs_selector[conf.BG_SUBTRACTOR]()
+			return True
 
-		return confirmed_objects
+		return False
 
 	# return if the two countours intersect each other
 	def check_intersection_from_contours(self, cnt1, cnt2):
@@ -183,6 +195,17 @@ class TEObjectTracker:
 			# Just assume that it's not moving
 			# TODO: predict new position based on kalman filter
 			sobj.update_movement(sobj.prev_contour, False)
+
+	# Get all tracked-confirmed objects
+	def get_tracked_objects(self, only_now_seen_objects = False):
+		confirmed_objects = filter(
+				lambda sobj: sobj.num_actual_updates > conf.NUM_FRAMES_TO_CONFIRM_OBJECTS,
+				self.tracked_objects)
+
+		if only_now_seen_objects:
+			return filter(lambda sobj: sobj.last_actual_update == 0, confirmed_objects)
+
+		return confirmed_objects
 
 	# Delete all tracked objects to newly start
 	def flush_objects(self):
