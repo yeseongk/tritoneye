@@ -75,7 +75,8 @@ if __name__ == '__main__':
 	if args.get("video", False): # if a video path was not supplied, grab the reference to the picamera
 		video_handler.initialize_with_file(args["video"])
 	else:
-		video_handler.initialize_with_configured_cam()
+		video_handler.initialize_with_pycamera2()
+		#video_handler.initialize_with_pycamera()
 
 	video_writer = TEVideoWriter()
 	if (args.get("record_video", False)): # to record a video
@@ -103,6 +104,10 @@ if __name__ == '__main__':
 		except TEInvalidFrameException as e:
 			print("Invalid frame exception: maybe it reaches to the end of the file.")
 			break
+
+		num_frames += 1
+		#if num_frames % 10 != 0: # Skip frames
+		#	continue
 
 		# Make a copy of the original frame
 		original_frame = frame.copy()
@@ -169,7 +174,6 @@ if __name__ == '__main__':
 
 		if print_verbose:
 			print(num_frames)
-		num_frames += 1
 
 	# After pressing q (or the end of the frame)
 	# cleanup the camera and close any open windows

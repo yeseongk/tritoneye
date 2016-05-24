@@ -9,8 +9,8 @@ import recognition.recognition_conf as conf
 # --------------------------------------------------
 # Image processing algorithm switcher
 bs_selector = { # Background subtration
-	conf.BackgroundSubtractor.MOG:	lambda: cv2.bgsegm.createBackgroundSubtractorMOG(), # parameter example: (200, 5, 0.5, 0)
-	conf.BackgroundSubtractor.MOG2:	lambda: cv2.createBackgroundSubtractorMOG2(),
+	conf.BackgroundSubtractor.MOG:	lambda: cv2.bgsegm.createBackgroundSubtractorMOG(50,30,0.9,5), # parameter example: (200, 5, 0.5, 0)
+	conf.BackgroundSubtractor.MOG2:	lambda: cv2.createBackgroundSubtractorMOG2(varThreshold=50),
 	conf.BackgroundSubtractor.GMG:	lambda: cv2.bgsegm.createBackgroundSubtractorGMG(),
 }
 
@@ -93,6 +93,7 @@ class TEObjectTracker:
 			self.frame_size = frame.shape[0:2]
 
 		# 1. Background subtraction
+		#frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) 
 		fgmask = self.bs.apply(frame)
 		fgmask_post = fgmask.copy()
 
@@ -116,8 +117,8 @@ class TEObjectTracker:
 				cv2.contourArea(cnt) < conf.MAX_OBJECT_AREA, contours)
 
 		# 4. Sudden change verification
-		if self.verify_sudden_change(contours):
-			return contours, fgmask, fgmask_post
+		#if self.verify_sudden_change(contours):
+		#	return contours, fgmask, fgmask_post
 
 		# 5. Track objects
 		self.track_objects_from_contours(contours)
@@ -149,6 +150,7 @@ class TEObjectTracker:
 	# return if the two countours intersect each other using rotated rect
 	# (slight inaccurate but much faster)
 	def check_intersection_from_rect(self, rect1, rect2):
+		#print(rect1, rect2)
 		ret, _ = cv2.rotatedRectangleIntersection(rect1, rect2)
 		return ret != cv2.INTERSECT_NONE
 
