@@ -2,54 +2,41 @@ class Floor < ActiveRecord::Base
 
 	belongs_to :parking_lot
 
-	def self.find_spots (floor, indictor)
+	def self.adjust_openspots (f)
+		if (f != nil)
+			cur_spots = f.capacity - f.total_cars
+			if (cur_spots > f.capacity)
+				cur_spots = f.capacity
 
-		testCase = ["01","01","11","21","01","20","10","01","01","11"]
-		count = 0
-		##10 open spots per floor, 5 floors, index 0 is total cars
-		potentialSpots = [50,10,10,10,10,10]
-		totalCars = [0,0,0,0,0,0]
+			if (cur_spots < 0)
+				cur_spots = 0
 
-		while count < testCase.length
-			hill = (testCase[count].to_s)[0]
-			hill = hill.to_i
-			direction = (testCase[count].to_s)[1]
-			#print direction
-			direction = direction.to_i
-			Floor.parkCount(hill,direction,totalCars,potentialSpots)
-			count += 1
+			f.open_spots = cur_spots
+			f.save
 		end
-		
 	end
 
-	def self.parkCount(hill,direction,totalCars,potentialSpots)
-		
-		if(direction == 1 ) ## car entered
-			#means hill=1 car goes 1->2
-			totalCars[hill] = totalCars[hill] - 1
-			totalCars[hill+1] = totalCars[hill+1] + 1
+	def self.find_spots (f1, f2, direction)
+		if(direction == 1) ## car entered
+			#means car goes 1->2
+			if (f1 != nil)
+				f1.total_cars +=  f1.total_cars - 1
+			end
+			if (f2 != nil)
+				f2.total_cars +=  f2.total_cars + 1
+			end
 		else
-			#means hill=1 car goes 2->1
-			totalCars[hill] = totalCars[hill] + 1
-			totalCars[hill+1] = totalCars[hill+1] - 1
-		end
-		puts totalCars
-		openSpots = []
+			if (f1 != nil)
+				f1.total_cars +=  f1.total_cars + 1
+			end
+			if (f2 != nil)
+				f2.total_cars +=  f2.total_cars - 1
 
-		first = true #do something different for index 0 aka total car count
- 		for s, c in zip(potentialSpots, totalCars)
- 			if first
- 				c = -c
- 				first = false
- 			end
-			if s+c < 0
-				openSpots.append(0)
-			else
-				openSpots.append(s-c)
 			end
 		end
-	
-		puts openSpots
-	end
 
+		# Update to DB
+		Floor.adjust_openspots(f1)
+		Floor.adjust_openspots(f2)
+	end
 end
