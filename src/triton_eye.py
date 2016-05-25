@@ -1,9 +1,54 @@
+import sys, signal
 import cv2
 import argparse
 
 from videohandler.videoutil import *
 from recognition.object_tracking import *
+from communication.tcpclient_util import *
 import recognition.recognition_conf as recg_conf
+
+# cleanup the camera/communication and close any open windows
+def cleanup():
+	global video_handler, video_writer, tcpinterface
+	if video_handler is not None:
+		video_handler.release()
+	if video_writer is not None:
+		video_writer.release()
+	if tcpinterface is not None:
+		tcpinterface.close()
+	cv2.destroyAllWindows()
+
+	print("All cleaned up")
+
+# SIGINT(Control+C) hanling
+def signal_handler(signal, frame):
+	print("Pressed Ctrl+C. Clean up")
+	cleanup()
+	sys.exit(0)
+
+def static_vars(**kwargs):
+	def decorate(func):
+		for k in kwargs:
+			setattr(func, k, kwargs[k])
+		return func
+	return decorate
+
+# Send over TCP
+@static_vars(prev_counters = None)
+def comm_counters(tcpinterface, count_in, count_out):
+	if (tcpinterface is None):
+		return
+
+	if comm_counters.prev_counters is not None: 
+		(prev_in, prev_out) = comm_counters.prev_counters
+		diff_in = count_in - prev_in
+		diff_out = count_out - prev_out
+
+		if diff_in > 0 or diff_out > 0:
+			tcpinterface.send_info(diff_in, diff_out)
+
+	comm_counters.prev_counters = (count_in, count_out)
+	
 
 # Merge frames into a single frame to display
 def merge_2x2frames(frame_list): # If # of frames > 4, ignored
@@ -56,24 +101,55 @@ def mouse_handler(event, x, y, flags, param):
 		print(line_start, line_end)
 
 if __name__ == '__main__':
+	# init global classes
+	video_handler = None
+	video_writer = None
+	tcpinterface = None
+	signal.signal(signal.SIGINT, signal_handler) # register signal handler
+
 	# construct the argument parse and parse the arguments
 	ap = argparse.ArgumentParser()
 	ap.add_argument("-v", "--video",
 		help="path to the (optional) video file")
-	ap.add_argument("-l", "--loop_video", action='store_true',
-		help="loop video, optional", required=False)
+	ap.add_argument("-l", "--loop", action='store_true',
+		help="loop video or log, optional", required=False)
 	ap.add_argument("-r", "--record_video",
 		help="path to the video file to write (optional)")
 	ap.add_argument("-t", "--record_track", action='store_true',
 		help="record video with the tracking result (valid only if -r is given, optional)", required=False)
 	ap.add_argument("-f", "--print_verbose", action='store_true',
 		help="print the frame number, optional", required=False)
-
-
+	ap.add_argument("-wl", "--write_logfile", help="write a log file for transfered counts, optional", required=False)
+	ap.add_argument("-sl", "--simulate_logfile", help="simulate a log file, optional. If given, no video processing is performed.", required=False)
+	ap.add_argument("-ss", "--simulation_speed", help="simulation speed, optional. Default = 1", required=False)
+	ap.add_argument("-di", "--device_id", help="device id sent to server, optional", required=False)
+	
 	args = vars(ap.parse_args())
 	record_track = args.get("record_track", False)
 	print_verbose = args.get("print_verbose", False)
-	loop_video = args.get("loop_video", False)
+	loop_procedure = args.get("loop", False)
+
+	simulation_speed = 1
+	if args.get("simulation_speed", False):
+		simulation_speed = float(args["simulation_speed"])
+
+	# Setup communication
+	tcpinterface = TCPIPInterface()
+	tcpinterface.connect()
+	if args.get("device_id", False):
+		tcpinterface.set_device_id(args["device_id"])
+
+	if args.get("write_logfile", False):
+		tcpinterface.set_log(args["write_logfile"])
+
+	if args.get("simulate_logfile", False):
+		do_simulate = True
+		while do_simulate:
+			tcpinterface.simulate_logfile(args["simulate_logfile"], simulation_speed)
+			do_simulate = loop_procedure
+
+		cleanup()
+		sys.exit()
 
 	# Setup VideoStream (camera or video file) & Writer
 	video_handler = TEVideoHandler()
@@ -108,7 +184,7 @@ if __name__ == '__main__':
 			frame = video_handler.read()
 		except TEInvalidFrameException as e:
 			print("Invalid frame exception: maybe it reaches to the end of the file.")
-			if loop_video and args.get("video", False): # If loop is enabled
+			if loop_procedure and args.get("video", False): # If loop is enabled
 				print("Loop video")
 				video_handler = TEVideoHandler()
 				video_handler.initialize_with_file(args["video"])
@@ -192,6 +268,9 @@ if __name__ == '__main__':
 				(20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
 		cv2.imshow(WINDOW_NAME, merged_frame)
 
+		# Update counts and send the info if required
+		comm_counters(tcpinterface, count_in, count_out)
+
 		# record video
 		if video_writer.isopened():
 			if record_track:
@@ -208,7 +287,5 @@ if __name__ == '__main__':
 			print(num_frames)
 
 	# After pressing q (or the end of the frame)
-	# cleanup the camera and close any open windows
-	video_handler.release()
-	video_writer.release()
-	cv2.destroyAllWindows()
+	# cleanup the camera/communication and close any open windows
+	cleanup()
