@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tritoneye</title>
+  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track' => true %>
+  <%= javascript_include_tag 'application', 'data-turbolinks-track' => true %>
+  <%= csrf_meta_tags %>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+  
+  <script type="text/javascript">
+  	
+	function startTime() {
+  		var today = new Date();
+  		var h = today.getHours();
+  		var m = today.getMinutes();
+  		var s = today.getSeconds();
+  		m = checkTime(m);
+  		s = checkTime(s);
+  		document.getElementById('time').innerHTML =
+    		"Time last updated: " + h + ":" + m + ":" + s;
+    		//var t = setTimeout(startTime, 500);
+	}
+
+	function checkTime(i) {
+ 		if (i < 10) {i = "0" + i};  // add zero in front of numbers < 10
+ 		return i;
+	}
+
+  </script>
+
+</head>
+
+<body onload="startTime()">
+
+<h1> TritonEye</h1>
+
+<%= yield %>
+
+
+</body>
+</html>

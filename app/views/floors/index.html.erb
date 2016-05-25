@@ -1,0 +1,41 @@
+<p id="notice"><%= notice %></p>
+
+
+
+<div>
+  <%= link_to 'Update', floors_path, class: "btn btn-primary", remote: true %>
+</div>
+
+<div id='time'></div>
+
+
+<table class="table table-hover table-bordered table-striped">
+  <thead>
+    <tr>
+      <th class='name'>Floor</th>
+      <th class='capacity'>Capacity</th>
+      <th class='capacity'>Open Spots</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @floors.each do |floor| %>
+      <tr>
+        <%= div_for floor do %>
+          <td id='name'>     <%= floor.name %></td>
+          <td id='capacity'> <%= floor.capacity %></td>
+          <td id='name'>     <%= floor.open_spots %></td>
+        <% end %>
+        
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<div>
+  <%= link_to 'Are you an admin?', new_floor_path, class: "btn btn-info" %>
+</div>
+
+

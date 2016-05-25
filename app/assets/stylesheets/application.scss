@@ -1,0 +1,81 @@
+/*
+ * This is a manifest file that'll be compiled into application.css, which will include all the files
+ * listed below.
+ *
+ * Any CSS and SCSS file within this directory, lib/assets/stylesheets, vendor/assets/stylesheets,
+ * or any plugin's vendor/assets/stylesheets directory can be referenced here using a relative path.
+ *
+ * You're free to add application-wide styles to this file and they'll appear at the bottom of the
+ * compiled file so the styles you add here take precedence over styles defined in any styles
+ * defined in the other CSS/SCSS files in this directory. It is generally better to create a new
+ * file per style scope.
+ *
+ */
+@import "bootstrap-sprockets";
+@import "bootstrap";
+
+h1 {
+	width: 500px;
+	text-align: center;
+	position: relative;
+	left: 30%;	
+}
+
+#name, .name, #capacity, .capacity {
+	text-align: center;
+}
+
+.table {
+	position: relative;
+	width: 70%;
+	left: 15%;
+	margin-top: 50px;
+}
+
+
+.btn-primary {
+	position: absolute;
+	width: 100px;
+	left: 90%;
+}
+
+.btn-info {
+	position: absolute;
+	width: 200px;
+	left: 40%;
+	margin-bottom: 50px;
+}
+
+.form-group {
+	position: relative;
+	
+	left: 35%;
+	margin-top: 50px;
+}
+
+.field {
+	position: relative;
+	margin-top: 50px;
+	margin-bottom: 50px;
+	width:30%;
+}
+	
+
+#time {
+	position: relative;
+	width: 200px;
+	left: 40%;
+	font-family: "Comic Sans MS", cursive, sans-serif;
+}
+
+.back {
+	width: 100px;
+	margin-top: 50px;
+}
+
+.show {
+	position: relative;
+	width: 70%;
+	left: 40%;
+	margin-top: 50px;
+}

@@ -1,0 +1,21 @@
+<div class='show'>
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Name:</strong>
+  <%= @floor.name %>
+</p>
+
+<p>
+  <strong>Capacity:</strong>
+  <%= @floor.capacity %>
+</p>
+
+<p>
+  <strong>Open Spots:</strong>
+  <%= @floor.open_spots %>
+</p>
+
+<%= link_to 'Edit', edit_floor_path(@floor) %> |
+<%= link_to 'Back', floors_path %>
+</div>
