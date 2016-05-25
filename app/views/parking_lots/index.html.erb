@@ -1,27 +1,31 @@
 <p id="notice"><%= notice %></p>
 
-<h1>Listing Parking Lots</h1>
+<div>
+  <%= link_to 'Update', floors_path, class: "btn btn-primary", remote: true %>
+</div>
 
-<table>
-  <thead>
-    <tr>
-      <th>Name</th>
-      <th colspan="3"></th>
-    </tr>
-  </thead>
+<div id='time'></div>
 
-  <tbody>
-    <% @parking_lots.each do |parking_lot| %>
+
+<% @parking_lots.each do |parking_lot| %>
+  <table class="table table-hover table-bordered table-striped">
+    <thead>
       <tr>
-        <td><%= parking_lot.name %></td>
-        <td><%= link_to 'Show', parking_lot %></td>
-        <td><%= link_to 'Edit', edit_parking_lot_path(parking_lot) %></td>
-        <td><%= link_to 'Destroy', parking_lot, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+        <th>Name</th>
+        <th colspan="3"></th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
 
-<br>
+    <tbody>
+      <% @parking_lots.each do |parking_lot| %>
+        <tr>
+          <td><%= parking_lot.name %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <br>
+<%end %>  
 
 <%= link_to 'New Parking lot', new_parking_lot_path %>

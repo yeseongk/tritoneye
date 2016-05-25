@@ -10,10 +10,7 @@ while line = client.gets
   	data = line.split(",")
 
   	if  ((f = Floor.find_by(name: data[0])) == nil)
-  		f = Floor.new
-  		f.name = data[0]
-		  f.capacity = data[1]
-  		f.save
+  		next;
   	end
 
   	Floor.find_spots(f, data[2].to_i)
