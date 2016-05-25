@@ -53,22 +53,27 @@ def mouse_handler(event, x, y, flags, param):
 
 	if event == cv2.EVENT_LBUTTONUP:
 		line_end = convert_points_on_2x2_frame(x, y)
+		print(line_start, line_end)
 
 if __name__ == '__main__':
 	# construct the argument parse and parse the arguments
 	ap = argparse.ArgumentParser()
 	ap.add_argument("-v", "--video",
 		help="path to the (optional) video file")
+	ap.add_argument("-l", "--loop_video", action='store_true',
+		help="loop video, optional", required=False)
 	ap.add_argument("-r", "--record_video",
 		help="path to the video file to write (optional)")
 	ap.add_argument("-t", "--record_track", action='store_true',
 		help="record video with the tracking result (valid only if -r is given, optional)", required=False)
 	ap.add_argument("-f", "--print_verbose", action='store_true',
-		help="print the frame number, optional)", required=False)
+		help="print the frame number, optional", required=False)
+
 
 	args = vars(ap.parse_args())
 	record_track = args.get("record_track", False)
 	print_verbose = args.get("print_verbose", False)
+	loop_video = args.get("loop_video", False)
 
 	# Setup VideoStream (camera or video file) & Writer
 	video_handler = TEVideoHandler()
@@ -103,6 +108,16 @@ if __name__ == '__main__':
 			frame = video_handler.read()
 		except TEInvalidFrameException as e:
 			print("Invalid frame exception: maybe it reaches to the end of the file.")
+			if loop_video and args.get("video", False): # If loop is enabled
+				print("Loop video")
+				video_handler = TEVideoHandler()
+				video_handler.initialize_with_file(args["video"])
+				object_tracker = TEObjectTracker()
+				line_based_counter = TELineBasedCounter()
+				line_start = None
+				line_end = None
+				num_frames = 0
+				continue
 			break
 
 		num_frames += 1
@@ -128,30 +143,47 @@ if __name__ == '__main__':
 			cv2.drawContours(frame, [cnt], -1, (0, 255, 0), 2)
 
 		# Draw the result frame with paths
-		tracked_objects = object_tracker.get_tracked_objects()
-		for sobj in tracked_objects:
-			draw_path(frame_result, sobj.position_list)
-			cv2.drawContours(frame_result, [sobj.prev_contour], -1, (0, 255, 0), 2)
-			pos = sobj.position_list[-1]
-			cv2.putText(frame_result, sobj.ID, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
+		if recg_conf.DETECTION_METHOD == recg_conf.DetectionMethod.OBJECT_TRACK:
+			tracked_objects = object_tracker.get_tracked_objects()
+			for sobj in tracked_objects:
+				draw_path(frame_result, sobj.position_list)
+				cv2.drawContours(frame_result, [sobj.prev_contour], -1, (0, 255, 0), 2)
+				pos = sobj.position_list[-1]
+				cv2.putText(frame_result, sobj.ID, pos, cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 1)
 
-		# Update line counter
-		if line_start is not None and line_end is not None and not line_based_counter.is_line_set():
-			line_based_counter.set_reference_line((line_start, line_end))
-		crossing_objects = line_based_counter.feed_objects(tracked_objects)
-		if len(crossing_objects) > 0:
-			if print_verbose:
-				print(crossing_objects)
+			# Update line counter
+			if line_start is not None and line_end is not None and not line_based_counter.is_line_set():
+				object_tracker.set_direction_counter(False)
+				line_based_counter.set_reference_line((line_start, line_end))
+			crossing_objects = line_based_counter.feed_objects(tracked_objects)
+			if len(crossing_objects) > 0:
+				if print_verbose:
+					print(crossing_objects)
 
-			for co in crossing_objects:
-				if co[1] == True:
-					count_in += 1
+				for co in crossing_objects:
+					if co[1] == True:
+						count_in += 1
+					else:
+						count_out += 1
+
+			# Draw user-defined line
+			if line_start is not None and line_end is not None:
+				cv2.line(frame_result, line_start, line_end, (0, 255, 255), 2)
+		else: # AREA_TRACK
+			box_list_with_occupancy = object_tracker.get_occupied_area_info()
+			for ((p1, p2), occ) in box_list_with_occupancy:
+				if occ:
+					color = (0,0,255)
 				else:
-					count_out += 1
+					color = (0,255,0)
+				cv2.rectangle(frame_result, p1, p2, color, 2)
 
-		# Draw user-defined line
-		if line_start is not None and line_end is not None:
-			cv2.line(frame_result, line_start, line_end, (0, 255, 255), 2)
+		# Count info from the object tracker
+		cur_in, cur_out = object_tracker.get_in_out_count()
+		if cur_in:
+			count_in += 1
+		if cur_out:
+			count_out += 1
 
 		# After PROCESSING: show the frame to our screen
 		merged_frame = merge_2x2frames([frame, frame_mask, frame_post, frame_result])
