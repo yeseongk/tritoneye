@@ -1,12 +1,13 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import sys, signal
 import struct
 import socket
 from thread import start_new_thread
 
 # Socket program configuration
-TCP_IP = '127.0.0.1'
-TCP_PORT = 12222
+TCP_IP = '137.110.160.147'
+TCP_PORT = 3000
 FILE_LEN_BUFFER_SIZE = 4 # 32-bit long = 4 bytes
 
 # For each client, this function is handling the received packet
@@ -15,14 +16,17 @@ def client_handling_thread(conn):
 		# 1) receive file length
 		data = conn.recv(FILE_LEN_BUFFER_SIZE)
 		if not data: break # disconnected
-		file_length_in_bytearray = bytearray(data)
-		file_length = struct.unpack("<l", file_length_in_bytearray)[0]
+		print(data,end='')
 
-		# 2) get file content
-		filecontent = conn.recv(file_length)
-		if not filecontent: break # disconnected
-		print(filecontent)
+		#file_length_in_bytearray = bytearray(data)
+		#file_length = struct.unpack("<l", file_length_in_bytearray)[0]
 
+		## 2) get file content
+		#filecontent = conn.recv(file_length)
+		#if not filecontent: break # disconnected
+		#print(filecontent)
+
+	print("Client socket closed")
 	conn.close()
 
 # SIGINT(Control+C) hanling
