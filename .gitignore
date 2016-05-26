@@ -9,7 +9,7 @@
 /log/*
 !/log/.keep
 /tmp
-=======
+#=======
 # Please add ignored files to commit
 
 # General externsions
