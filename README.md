@@ -2,7 +2,7 @@ Triton Eye: Where's an available parking spot?
 ==============================================
 ### Based on video processing and web user interfaces
 #### UCSD CSE145/237D Project, Spring 2016
-#### CSE 145/237D Professor Ryan Kestner
+#### CSE 145/237D Professor Ryan Kastner
 
 ### Developers
 * Project Lead  - Sameer Kausar
@@ -13,8 +13,8 @@ Project Overview
 ================
 We are creating system that provides live parking availability. This will allow for individuals looking for parking to spend less time searching for spots. This is especially relevant today since most commuter students, faculty and UCSD employees do not have the time to circle around campus hunting for parking. The parking count will be displayed live on a website. One promising way to reduce the deployment cost is to leverage a computer vision-based vehicle detection on emerging small computing devices such as Raspberry Pi. In this project, our system exploits a network of Raspberry Pi’s with cameras equipped on each floor and counts the number of cars based on OpenCV library. The output is sent to a server over TCP/IP protocols and users can access the information through a website. In our evaluation conducted on a field testing, we show that our systems can report the available parking spots to users on a website by efficient video processing on Raspberry Pi.
 
-Introduction Videos
-===================
+Introduction Video
+==================
 
 [![Introduction](http://img.youtube.com/vi/lXNUYxQ7uBQ/0.jpg)](https://www.youtube.com/watch?v=lXNUYxQ7uBQ)
 
