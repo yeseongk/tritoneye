@@ -42,15 +42,15 @@ How to run?
 ===========
 * Backend (Raspberry Pi 2+, OpenCV 3.0.1)
 
-(Actual) $ python triton_eye.py [-v VIDEO_FILENAME]
+(Actual)      $ python triton_eye.py [-v VIDEO_FILENAME]
 
-(Simulation) $ python simulation_triton_eye.py -sl LOG_FILENAME -ss SIMULATION_SPEED
+(Simulation)  $ python simulation_triton_eye.py -sl LOG_FILENAME -ss SIMULATION_SPEED
 
 * Frontend (Ruby on Rails)
 
-(server) $ rails runner server.rb
+(server)          $ rails runner server.rb
 
-(web app server) $ rails s -b [IP_ADDRESS or 0.0.0.0 for generic] -p [PORT NUMBER]
+(web app server)  $ rails s -b [IP_ADDRESS or 0.0.0.0 for generic] -p [PORT NUMBER]
 
 What's in repo?
 ===============
@@ -61,4 +61,4 @@ What's in repo?
 | Backend      | /src      |   Requirement: OpenCV 3.0.1 |
 | Test code for OpenCV | /test_src      |    Usable to check the valid setup of Raspberry Pi |
 | Sample video | /sample_video | Include stocked videos and field testing video recorded in UCSD |
-| Sample log | /sample_log | - Input files for the traffic simulator |
+| Sample log | /sample_log | Input files for the traffic simulator |
