@@ -2,7 +2,7 @@ Triton Eye: Where's an available parking spot?
 ==============================================
 ### Based on video processing and web user interfaces
 #### UCSD CSE145/237D Project, Spring 2016
-#### CSE 145/237D Professor Ryan Kastner
+#### Professor Ryan Kastner
 
 ### Developers
 * Project Lead  - Sameer Kausar
